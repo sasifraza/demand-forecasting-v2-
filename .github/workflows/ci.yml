@@ -27,7 +27,7 @@ jobs:
       # Step 3 - Login to your Azure Container Registry
       - name: Login to ACR
         run: |
-          az acr login --name ${{ secrets.ACR_NAME }}  # = demandforecastingacr
+          az acr login --name ${{ secrets.ACR_NAME }}  
 
       # Step 4 - Build Docker image and push to ACR
       - name: Build and push image
