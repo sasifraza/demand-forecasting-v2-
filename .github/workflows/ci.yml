@@ -1,0 +1,47 @@
+# Name of this workflow - shows in GitHub Actions tab
+name: Deploy Demand Forecasting API
+
+# TRIGGER - when to run this workflow
+on:
+  push:                    # run when code is pushed
+    branches: [main]       # only on main branch
+
+# JOBS - what to do
+jobs:
+  deploy:                          # job name
+    runs-on: ubuntu-latest         # run on fresh Linux VM in GitHub
+
+    # STEPS - sequence of actions
+    steps:
+
+      # Step 1 - Download your code onto the VM
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2 - Login to Azure using your credentials secret
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}  # the JSON you saved
+
+      # Step 3 - Login to your Azure Container Registry
+      - name: Login to ACR
+        run: |
+          az acr login --name ${{ secrets.ACR_NAME }}  # = demandforecastingacr
+
+      # Step 4 - Build Docker image and push to ACR
+      - name: Build and push image
+        run: |
+          docker build \
+            -t ${{ secrets.ACR_NAME }}.azurecr.io/demand-api:latest \
+            .
+          docker push \
+            ${{ secrets.ACR_NAME }}.azurecr.io/demand-api:latest
+
+      # Step 5 - Tell Container App to use the new image
+      - name: Deploy to Container Apps
+        run: |
+          az containerapp update \
+            --name demand-forecasting-app \
+            --resource-group ${{ secrets.RESOURCE_GROUP }} \
+            --image ${{ secrets.ACR_NAME }}.azurecr.io/demand-api:latest
