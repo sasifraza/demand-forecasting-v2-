@@ -4,14 +4,22 @@ import joblib
 import numpy as np
 import os
 
-# loan model 
-
+# File paths
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, "..", "saved_models", "model.pkl")
 
-model = joblib.load(MODEL_PATH)
+# Load model
+try:
+    model = joblib.load(MODEL_PATH)
+    print(f"Model loaded from {MODEL_PATH}")
+except Exception as e:
+    print(f"ERROR loading model: {e}")
+    model = None
 
-# PredictRequest is YOUR class that uses BaseModel
+# Create app
+app = FastAPI(title="Demand Forecasting API")
+
+# Input schema
 class PredictRequest(BaseModel):
     lag_1: float
     lag_7: float
@@ -20,13 +28,10 @@ class PredictRequest(BaseModel):
     rolling_mean_14: float
     id_encoded: int
 
-# create APP
-
-app =FastAPI(title= "Demand Forecasting API")
-
+# Health endpoint
 @app.get("/health")
 def health():
-    return {"status": "ok"}
+    return {"status": "ok", "model_loaded": model is not None}
 
 # Metrics endpoint
 @app.get("/metrics")
@@ -39,6 +44,8 @@ def metrics():
 # Predict endpoint
 @app.post("/predict")
 def predict(request: PredictRequest):
+    if model is None:
+        return {"error": "Model not loaded"}
     features = np.array([[
         request.lag_1,
         request.lag_7,
