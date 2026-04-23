@@ -45,3 +45,15 @@ jobs:
             --name demand-forecasting-app \
             --resource-group ${{ secrets.RESOURCE_GROUP }} \
             --image ${{ secrets.ACR_NAME }}.azurecr.io/demand-api:latest
+      # Step 6 - Route traffic to latest revision
+      - name: Set traffic to latest revision
+        run: |
+          az containerapp revision set-mode \
+            --name demand-forecasting-app \
+            --resource-group ${{ secrets.RESOURCE_GROUP }} \
+            --mode multiple
+          az containerapp ingress traffic set \
+            --name demand-forecasting-app \
+            --resource-group ${{ secrets.RESOURCE_GROUP }} \
+            --revision-weight latest=100
+        
